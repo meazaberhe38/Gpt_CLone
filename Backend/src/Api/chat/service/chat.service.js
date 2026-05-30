@@ -1,7 +1,7 @@
 import db from "../../../../db/db.config.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
