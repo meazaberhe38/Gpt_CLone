@@ -16,10 +16,9 @@ export const getRecentConversationRows = async (limit = 5) => {
 
     const [rows] = await db.execute(
       `SELECT id, role, content, created_at
-       FROM conversations
-       ORDER BY id DESC
-       LIMIT ?`,
-      [safeLimit],
+   FROM conversations
+   ORDER BY id DESC
+   LIMIT ${safeLimit}`,
     );
 
     return rows.reverse();
