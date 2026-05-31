@@ -19,11 +19,10 @@ async function startserver() {
     console.log("Connected to the database!");
     connection.release();
 
-    app.listen(3000, (err) => {
-      if (err) {
-        throw err;
-      }
-      console.log("Server is running on port http://localhost:3000");
+    const PORT = process.env.PORT || 3000;
+
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
     });
   } catch (error) {
     console.error("Error connecting to the database:", error.message);

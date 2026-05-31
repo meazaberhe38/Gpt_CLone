@@ -6,84 +6,74 @@ import MessageList from "./components/MessageList/MessageList";
 import ChatInput from "./components/ChatInput/ChatInput";
 import "./App.css";
 
-// ✅ CORRECT BASE URL (matches your backend)
-const API_BASE_URL = "https://gpt-clone-8nak.onrender.com/api/chat";
+const API_BASE_URL = "http://localhost:3000/api";
 
 function App() {
   const [conversations, setConversations] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // scroll to bottom
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [conversations, isLoading]);
-
-  // GET conversations
-  const fetchConversations = async () => {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/conversations`);
-
-      setConversations(res.data?.data?.conversations || []);
-    } catch (error) {
-      console.error("Fetch error:", error);
-      setConversations([]);
-    }
   };
 
   useEffect(() => {
     fetchConversations();
   }, []);
 
-  // SEND message
-  const handleSendMessage = async (question) => {
-    if (!question.trim()) return;
+  useEffect(() => {
+    scrollToBottom();
+  }, [conversations, isLoading]);
 
+  const fetchConversations = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/chat/conversations`);
+      if (response.data.success) {
+        setConversations(response.data.data.conversations);
+      }
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+    }
+  };
+
+  const handleSendMessage = async (question) => {
+    // Optimistically add user message
     const tempUserMessage = {
       id: Date.now(),
       role: "user",
       content: question,
     };
-
-    // safe update
-    setConversations((prev) =>
-      Array.isArray(prev) ? [...prev, tempUserMessage] : [tempUserMessage],
-    );
-
+    setConversations((prev) => [...prev, tempUserMessage]);
     setIsLoading(true);
 
     try {
-      const res = await axios.post(`${API_BASE_URL}/conversations`, {
+      const response = await axios.post(`${API_BASE_URL}/chat/conversations`, {
         question,
       });
-
-      const { userConversation, assistantConversation } = res.data.data;
-
-      setConversations((prev) => {
-        const safePrev = Array.isArray(prev) ? prev : [];
-
-        const filtered = safePrev.filter(
-          (msg) => msg.id !== tempUserMessage.id,
-        );
-
-        return [...filtered, userConversation, assistantConversation];
-      });
+      if (response.data.success) {
+        const { userConversation, assistantConversation } = response.data.data;
+        // Replace temp message with real ones
+        setConversations((prev) => {
+          const filtered = prev.filter((msg) => msg.id !== tempUserMessage.id);
+          return [...filtered, userConversation, assistantConversation];
+        });
+      }
     } catch (error) {
-      console.error("Send error:", error);
+      console.error("Error posting conversation:", error);
 
-      const errorMsg = {
+      // Extract error message from backend response or use a realistic fallback
+      const errorMessage =
+        error.response?.data?.message ||
+        "There was an error generating a response.";
+
+      // Add error message to chat
+      const errorConversation = {
         id: Date.now() + 1,
         role: "assistant",
-        content: error.response?.data?.message || "Error generating response",
+        content: errorMessage,
       };
 
-      setConversations((prev) =>
-        Array.isArray(prev) ? [...prev, errorMsg] : [errorMsg],
-      );
+      setConversations((prev) => [...prev, errorConversation]);
     } finally {
       setIsLoading(false);
     }
